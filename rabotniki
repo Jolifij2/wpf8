@@ -1,0 +1,106 @@
+//MainWindow.xaml
+<Window x:Class="EmployeeInfoWPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Employee Information" Height="500" Width="600">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Margin="10">
+            <Button Content="Анализ данных" Click="AnalyzeDataButton_Click"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" Margin="10">
+            <StackPanel>
+                <TextBlock Text="Самый молодой сотрудник:" FontWeight="Bold"/>
+                <TextBlock x:Name="youngestEmployeeTextBlock"/>
+                <TextBlock Text="Самый старый сотрудник:" FontWeight="Bold" Margin="0,10,0,0"/>
+                <TextBlock x:Name="oldestEmployeeTextBlock"/>
+                <TextBlock Text="Самое популярное время года:" FontWeight="Bold" Margin="0,10,0,0"/>
+                <TextBlock x:Name="popularSeasonTextBlock"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>  
+//MainWindow.xaml.cs
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Windows;
+
+namespace EmployeeInfoWPF
+{
+    public partial class MainWindow : Window
+    {
+        private List<Employee> employees = new List<Employee>()
+        {
+            new Employee { LastName = "Иванов", FirstName = "Иван", MiddleName = "Иванович", BirthDate = DateTime.ParseExact("15/03/1990", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Москва" },
+            new Employee { LastName = "Петров", FirstName = "Петр", MiddleName = "Петрович", BirthDate = DateTime.ParseExact("20/12/1985", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Санкт-Петербург" },
+            new Employee { LastName = "Сидоров", FirstName = "Сидор", MiddleName = "Сидорович", BirthDate = DateTime.ParseExact("01/07/1995", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Киев" },
+            new Employee { LastName = "Смирнов", FirstName = "Алексей", MiddleName = "Игоревич", BirthDate = DateTime.ParseExact("10/09/1988", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Минск" },
+            new Employee { LastName = "Кузнецов", FirstName = "Дмитрий", MiddleName = "Сергеевич", BirthDate = DateTime.ParseExact("25/03/1992", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Москва" },
+            new Employee { LastName = "Волкова", FirstName = "Елена", MiddleName = "Андреевна", BirthDate = DateTime.ParseExact("05/06/1993", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Самара" },
+            new Employee { LastName = "Морозова", FirstName = "Ольга", MiddleName = "Петровна", BirthDate = DateTime.ParseExact("18/12/1980", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Владивосток" },
+            new Employee { LastName = "Лебедева", FirstName = "Татьяна", MiddleName = "Михайловна", BirthDate = DateTime.ParseExact("22/09/1991", "dd/MM/yyyy", CultureInfo.InvariantCulture), BirthPlace = "Казань" }
+        };
+
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void AnalyzeDataButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Find the youngest employee
+            Employee youngestEmployee = employees.OrderByDescending(emp => emp.BirthDate).FirstOrDefault();
+            youngestEmployeeTextBlock.Text = youngestEmployee != null ? youngestEmployee.BirthPlace : "Нет данных";
+
+            // Find the oldest employee
+            Employee oldestEmployee = employees.OrderBy(emp => emp.BirthDate).FirstOrDefault();
+            oldestEmployeeTextBlock.Text = oldestEmployee != null ? oldestEmployee.BirthPlace : "Нет данных";
+
+            // Determine the most popular season
+            var seasonCounts = employees.GroupBy(emp => GetSeason(emp.BirthDate))
+                                        .OrderByDescending(group => group.Count());
+
+            if (seasonCounts.Any())
+            {
+                var mostPopularSeasonGroup = seasonCounts.First();
+                string seasonName = mostPopularSeasonGroup.Key;
+                int count = mostPopularSeasonGroup.Count();
+                string employeeNames = string.Join(", ", mostPopularSeasonGroup.Select(emp => emp.LastName));
+
+                popularSeasonTextBlock.Text = $"{seasonName} ({count} сотрудников): {employeeNames}";
+            }
+            else
+            {
+                popularSeasonTextBlock.Text = "Нет данных";
+            }
+        }
+
+        private string GetSeason(DateTime date)
+        {
+            int month = date.Month;
+            if (month >= 3 && month <= 5) return "Весна";
+            if (month >= 6 && month <= 8) return "Лето";
+            if (month >= 9 && month <= 11) return "Осень";
+            return "Зима";
+        }
+    }
+
+    public class Employee
+    {
+        public string LastName { get; set; }
+        public string FirstName { get; set; }
+        public string MiddleName { get; set; }
+        public DateTime BirthDate { get; set; }
+        public string BirthPlace { get; set; }
+    }
+}
