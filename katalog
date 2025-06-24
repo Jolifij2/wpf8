@@ -1,0 +1,98 @@
+//MainWindow.XAMl
+<Window x:Class="TreeViewFileExplorer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="File Explorer" Height="450" Width="400">
+    <Grid>
+        <TreeView x:Name="fileTreeView" ItemsSource="{Binding TreeViewItems}">
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                    <TextBlock Text="{Binding Name}"/>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+    </Grid>
+</Window>  
+//MainWindow.XAMl.cs
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows;
+
+namespace TreeViewFileExplorer
+{
+    public partial class MainWindow : Window
+    {
+        public ObservableCollection<TreeViewItemData> TreeViewItems { get; set; } = new ObservableCollection<TreeViewItemData>();
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            DataContext = this;
+
+            string rootPath = "C:\\"; // Change this to your desired root directory
+
+            try
+            {
+                DirectoryInfo rootDirectoryInfo = new DirectoryInfo(rootPath);
+                TreeViewItemData rootItem = new TreeViewItemData { Name = rootDirectoryInfo.Name, Path = rootDirectoryInfo.FullName };
+                TreeViewItems.Add(rootItem);
+                LoadSubDirectories(rootItem); // Load subdirectories recursively.
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading root directory: {ex.Message}");
+            }
+        }
+
+        private void LoadSubDirectories(TreeViewItemData item)
+        {
+            DirectoryInfo directoryInfo = null; // Declare directoryInfo here
+            try
+            {
+                directoryInfo = new DirectoryInfo(item.Path);
+                DirectoryInfo[] subDirectories = directoryInfo.GetDirectories();
+
+                foreach (DirectoryInfo subDirectory in subDirectories)
+                {
+                    TreeViewItemData subItem = new TreeViewItemData { Name = subDirectory.Name, Path = subDirectory.FullName };
+                    item.Children.Add(subItem);
+                    LoadSubDirectories(subItem); // Recursive call
+                }
+            }
+            catch (Exception ex)
+            {
+                // Optionally log the exception, or add a placeholder node indicating an error
+                item.Children.Add(new TreeViewItemData { Name = $"Error loading subdirectories: {ex.Message}" });
+            }
+
+            try
+            {
+                if (directoryInfo != null)  // Check if directoryInfo is initialized
+                {
+                    FileInfo[] files = directoryInfo.GetFiles();
+                    foreach (FileInfo file in files)
+                    {
+                        TreeViewItemData fileItem = new TreeViewItemData { Name = file.Name, Path = file.FullName };
+                        item.Children.Add(fileItem);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                item.Children.Add(new TreeViewItemData { Name = $"Error loading files: {ex.Message}" });
+            }
+        }
+    }
+
+    public class TreeViewItemData
+    {
+        public string Name { get; set; }
+        public string Path { get; set; } // Store the full path for each item
+        public ObservableCollection<TreeViewItemData> Children { get; set; } = new ObservableCollection<TreeViewItemData>();
+    }
+}
